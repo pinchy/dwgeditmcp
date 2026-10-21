@@ -63,6 +63,16 @@ Check it works:
 .venv/bin/python dwg_edit.py -h
 ```
 
+## Drawing rules
+
+Your drawing rules live in `rules.toml`: leader style, leader scale per viewport scale, tag block, schedule table layout, and house rules for Claude. Start from the template:
+
+```bash
+cp rules.template.toml rules.toml
+```
+
+Then edit `rules.toml`. It is git-ignored. Without it, the tool uses `rules.template.toml`. To use a file somewhere else, set `DWG_RULES=/path/to/rules.toml`.
+
 ## Use
 
 ```bash
@@ -86,7 +96,7 @@ Close the drawing in AutoCAD (without saving) before you save over it. `save` re
 
 ### Schedules
 
-`schedules` and `table` read `schedules/schedules.json` and one CSV per schedule. Example config:
+`schedules` and `table` read the schedule config (`[schedules] config` in `rules.toml`, default `schedules/schedules.json`) and one CSV per schedule. Example config:
 
 ```json
 {

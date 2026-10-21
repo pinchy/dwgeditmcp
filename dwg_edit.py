@@ -29,6 +29,8 @@ from ezdxf.entities import DXFEntity, Leader, MultiLeader
 from ezdxf.math import Vec2, Vec3
 from ezdxf.tools.text import plain_mtext
 
+from rules import LEADERS, SCHEDULES
+
 LEADER_QUERY = "LEADER MULTILEADER MLEADER"
 
 ODA_CANDIDATES = [
@@ -829,9 +831,9 @@ def cmd_replace(args) -> None:
 
 
 STANDARD_SCALES = [1, 2, 5, 10, 20, 25, 40, 50, 75, 100, 200, 250, 500, 1000]
-# Leader scale for a viewport scale when it is not the viewport scale itself.
-# 1:100 notes plot at half size (1.25 mm); full size crowds those views.
-LEADER_SCALE_FOR_VIEWPORT = {100: 50}
+# Leader scale for a viewport scale when it is not the viewport scale itself
+# (rules.toml [leaders.scale_for_viewport]).
+LEADER_SCALE_FOR_VIEWPORT = {float(k): v for k, v in LEADERS.get("scale_for_viewport", {}).items()}
 
 
 def viewport_scales(doc: Drawing) -> list[tuple[str, Vec2, float, float, float]]:
@@ -878,9 +880,8 @@ def normalize_edits(doc: Drawing, rows, style_name: str | None, keep: str) -> li
 
     keep="text"/"arrow": the new scale keeps the on-screen text height / arrow
     size. keep="viewport": scale = scale of the sheet viewport showing the
-    leader (or its LEADER_SCALE_FOR_VIEWPORT entry, 1:100 -> 50), so notes
-    plot at the style's text height, half that on 1:100 (leaders on no sheet
-    are skipped). Text height, arrow size and landing gap become
+    leader (or its LEADER_SCALE_FOR_VIEWPORT entry), so notes plot at the
+    style's text height (leaders on no sheet are skipped). Text height, arrow size and landing gap become
     style value x scale. Geometry (text position, landing lengths) is untouched.
     """
     vps = viewport_scales(doc) if keep == "viewport" else None
@@ -1395,11 +1396,12 @@ SCHEDULE_DEFAULTS = {
     "title_scale": 1.4,
     "char_width": 0.9,       # average glyph width / text height, for sizing and wrapping
     "max_width": 380,        # usable sheet width above the title block
-    "layer": "ds_text",
+    "layer": "0",
     "text_style": "Standard",
     "origin": [0, 280],      # top-left of the first table on a sheet
     "bottom": 30,            # lowest y a table may reach (top of title block strip)
     "gap": 12,               # vertical gap between stacked tables
+    **SCHEDULES.get("defaults", {}),
 }
 
 
@@ -1802,7 +1804,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("schedules", help="Build all schedule tables from a config onto their sheets")
     sp.add_argument("dwg")
-    sp.add_argument("--config", default="schedules/schedules.json")
+    sp.add_argument("--config", default=SCHEDULES.get("config", "schedules/schedules.json"))
     sp.add_argument("--only", nargs="*", help="Rebuild only these schedule ids")
     sp.set_defaults(func=cmd_schedules)
 
@@ -1813,7 +1815,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("key", nargs="?")
     sp.add_argument("values", nargs="*")
     sp.add_argument("--after")
-    sp.add_argument("--config", default="schedules/schedules.json")
+    sp.add_argument("--config", default=SCHEDULES.get("config", "schedules/schedules.json"))
     sp.set_defaults(func=cmd_table)
 
     sp = sub.add_parser("new-sheet", help="Create a sheet from a template sheet (title block, notes; no viewports)")

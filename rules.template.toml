@@ -1,0 +1,42 @@
+# Drawing rules for dwg_edit.py and dwg_mcp.py.
+# Copy this file to rules.toml and edit it. Without rules.toml these values are used.
+# Use another file with: DWG_RULES=/path/to/rules.toml
+
+[leaders]
+# MLEADERSTYLE every note should use. Default for `normalize` (MCP) and `mstyle`.
+style = "Standard"
+
+# Leader scale for a viewport scale, when it should differ from the viewport scale.
+# `normalize --keep viewport` sets each leader's scale to its viewport's scale,
+# so notes plot at the style's text height. Example: 1:100 notes at half size.
+[leaders.scale_for_viewport]
+# 100 = 50
+
+[tags]
+# Block whose attributes hold schedule tags (e.g. WD01). Default for `attrib` (MCP).
+block = "SCHEDULE_LABEL"
+
+[schedules]
+# Schedule config, relative to the folder the tool runs in.
+config = "schedules/schedules.json"
+
+# Table layout defaults, in paper mm. A schedule config's "defaults" and a
+# schedule's "options" override these.
+[schedules.defaults]
+text_height = 2.5
+title_scale = 1.4      # title height / text height
+char_width = 0.9       # average glyph width / text height, for column widths and wrapping
+max_width = 380        # usable sheet width above the title block
+layer = "0"
+text_style = "Standard"
+origin = [0, 280]      # top-left of the first table on a sheet
+bottom = 30            # lowest y a table may reach (top of the title block)
+gap = 12               # vertical gap between stacked tables
+
+[claude]
+# House rules Claude follows when it edits drawings through dwg_mcp.py.
+notes = """
+- Every multileader uses MLEADERSTYLE `Standard`, sized only by `scale`, and scale = the scale
+  of the sheet viewport it shows in, so every note plots at the same height.
+  dwg_normalize(style="Standard", keep="viewport") enforces this (dry run first).
+"""

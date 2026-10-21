@@ -15,5 +15,6 @@
 renders/
 schedules/
 CLAUDE.md
+rules.toml
 
 __pycache__/

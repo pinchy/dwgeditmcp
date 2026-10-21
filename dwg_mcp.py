@@ -17,6 +17,8 @@ from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import ToolAnnotations
 
+from rules import CLAUDE_NOTES, LEADERS, TAGS
+
 HERE = Path(__file__).resolve().parent
 SCRIPT = HERE / "dwg_edit.py"
 # Relative DWG paths resolve against this folder.
@@ -28,17 +30,14 @@ ENV = {**os.environ, "PATH": f"/opt/homebrew/bin:/usr/local/bin:{os.environ.get(
 READ = ToolAnnotations(read_only_hint=True)
 EDIT = ToolAnnotations(read_only_hint=False, destructive_hint=False)
 DESTRUCTIVE = ToolAnnotations(read_only_hint=False, destructive_hint=True)
+LEADER_STYLE = LEADERS.get("style", "Standard")
+TAG_BLOCK = TAGS.get("block")
 
 INSTRUCTIONS = """\
 Edits DWG drawings (MULTILEADERs, sheets, schedule tables) via a working DXF copy.
 Edits never touch the DWG until dwg_save. Review with dwg_changes before saving.
 
-House rules:
-- The user only works with MULTILEADERs. Old-style LEADERs have no linked text.
-- Every multileader uses MLEADERSTYLE `SebStyle` (2.5 text and arrow) sized only by `scale`, and
-  scale = the scale of the sheet viewport it shows in, so every note plots at 2.5 mm.
-  Exception: on 1:100 viewports scale = 50, so those notes plot at 1.25 mm.
-  dwg_normalize(style="SebStyle", keep="viewport") enforces this (dry run first).
+Tool notes:
 - To move a note use dwg_set with {"move": [dx, dy]} (model units; arrow tip stays). Check with
   dwg_render: bigger text can collide or get clipped at the viewport edge.
 - Moving MULTILEADER text does not move its leader lines. Move both.
@@ -47,8 +46,9 @@ House rules:
 - If output says "changed outside this tool", the working copy was reloaded; re-check earlier edits.
 - Leaders inside unused anonymous blocks (A$C...) are invisible leftovers; ignore them.
 - Use dwg_render to look at leaders before and after moving them.
-- Window/skylight sizes come from the CAD (SCHEDULE_LABEL blocks), not the BASIX or Materials PDFs.
 """
+if CLAUDE_NOTES:
+    INSTRUCTIONS += f"\nHouse rules:\n{CLAUDE_NOTES}\n"
 
 mcp = MCPServer("dwg", instructions=INSTRUCTIONS)
 
@@ -209,12 +209,12 @@ def dwg_replace(dwg: str, find: str, replace: str, regex: bool = False, case_sen
 
 
 @mcp.tool(annotations=EDIT)
-def dwg_normalize(dwg: str, style: str | None = "SebStyle", keep: Literal["viewport", "text", "arrow"] = "viewport",
+def dwg_normalize(dwg: str, style: str | None = LEADER_STYLE, keep: Literal["viewport", "text", "arrow"] = "viewport",
                   dry_run: bool = True, contains: str | None = None, layer: str | None = None,
                   space: str | None = None) -> str:
     """Put multileaders on `style` at default sizes, sized only by scale. keep="viewport" sets each
-    leader's scale to the scale of the sheet viewport showing it (all notes plot at the style text
-    height; on 1:100 viewports scale 50, half height; leaders on no sheet are skipped). keep="text"/"arrow" preserve that on-screen size.
+    leader's scale to the scale of the sheet viewport showing it, or its rules.toml
+    scale_for_viewport entry (notes plot at the style text height; leaders on no sheet are skipped). keep="text"/"arrow" preserve that on-screen size.
     Runs as a dry run unless dry_run=false."""
     a = ["normalize", dwg_path(dwg), "--keep", keep, *filter_args("mleader", contains, layer, space, True)]
     if style:
@@ -225,7 +225,7 @@ def dwg_normalize(dwg: str, style: str | None = "SebStyle", keep: Literal["viewp
 
 
 @mcp.tool(annotations=EDIT)
-def dwg_mstyle(dwg: str, name: str = "SebStyle", values: dict[str, Any] | None = None) -> str:
+def dwg_mstyle(dwg: str, name: str = LEADER_STYLE, values: dict[str, Any] | None = None) -> str:
     """Show an MLEADERSTYLE, or set its defaults (e.g. {"char_height": 2.5, "arrow_head_size": 2.5}).
     Existing leaders pick up new sizes only after dwg_normalize."""
     a = ["mstyle", dwg_path(dwg), name]
@@ -235,10 +235,10 @@ def dwg_mstyle(dwg: str, name: str = "SebStyle", values: dict[str, Any] | None =
 
 
 @mcp.tool(annotations=EDIT)
-def dwg_attrib(dwg: str, find: str, replace: str, block: str | None = "SCHEDULE_LABEL",
+def dwg_attrib(dwg: str, find: str, replace: str, block: str | None = TAG_BLOCK,
                regex: bool = False, dry_run: bool = True) -> str:
     """Find/replace in block attribute values, e.g. tag labels DR-01 -> DR01. block limits it to one
-    block name (default SCHEDULE_LABEL, the tag labels). Runs as a dry run unless dry_run=false."""
+    block name (default: the tag block from rules.toml). Runs as a dry run unless dry_run=false."""
     a = ["attrib", dwg_path(dwg), find, replace]
     if block:
         a += ["--block", block]
@@ -301,7 +301,7 @@ def dwg_rename_sheet(dwg: str, old: str, new: str, after: str | None = None) -> 
 
 @mcp.tool(annotations=EDIT)
 def dwg_schedules(dwg: str, only: list[str] | None = None) -> str:
-    """Redraw schedule tables from schedules/schedules.json and its CSVs onto their sheets.
+    """Redraw schedule tables from the schedule config (rules.toml) and its CSVs onto their sheets.
     Creates missing sheets. Placed tables keep their position. only: schedule ids to rebuild."""
     return run("schedules", dwg_path(dwg), *(["--only", *only] if only else []))
 
