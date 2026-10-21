@@ -1,0 +1,19 @@
+# Hidden files and folders (.venv, .dwg_work, .claude, .DS_Store, ...)
+.*
+!.gitignore
+
+# Drawings and AutoCAD side files
+*.dwg
+*.dxf
+*.bak
+*.dwl
+*.dwl2
+
+# Project documents and data
+*.pdf
+*.csv
+renders/
+schedules/
+CLAUDE.md
+
+__pycache__/
