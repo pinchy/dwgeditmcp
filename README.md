@@ -1,4 +1,4 @@
-# dwg
+# dwg edit skill
 
 Query and edit MULTILEADERs, sheets and schedule tables in AutoCAD DWG files from the command line, or from Claude Desktop through an MCP server.
 
