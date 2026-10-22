@@ -25,7 +25,9 @@ SCRIPT = HERE / "dwg_edit.py"
 DWG_HOME = Path(os.environ.get("DWG_HOME", HERE)).expanduser()
 MAX_IMAGES = 8
 # Claude Desktop starts servers with a minimal PATH; render needs Homebrew's rsvg-convert.
-ENV = {**os.environ, "PATH": f"/opt/homebrew/bin:/usr/local/bin:{os.environ.get('PATH', '/usr/bin:/bin')}"}
+ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+if sys.platform != "win32":
+    ENV["PATH"] = f"/opt/homebrew/bin:/usr/local/bin:{os.environ.get('PATH', '/usr/bin:/bin')}"
 
 READ = ToolAnnotations(read_only_hint=True)
 EDIT = ToolAnnotations(read_only_hint=False, destructive_hint=False)
@@ -67,7 +69,7 @@ def dwg_path(dwg: str) -> str:
 def run(*args: str, stdin: str | None = None) -> str:
     proc = subprocess.run(
         [sys.executable, str(SCRIPT), *args],
-        input=stdin, capture_output=True, text=True, cwd=DWG_HOME, env=ENV, timeout=900,
+        input=stdin, capture_output=True, text=True, encoding="utf-8", cwd=DWG_HOME, env=ENV, timeout=900,
     )
     err = proc.stderr.strip()
     if proc.returncode != 0:

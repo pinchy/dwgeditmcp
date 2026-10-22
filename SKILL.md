@@ -11,7 +11,7 @@ description: Query and edit AutoCAD DWG files - MULTILEADER notes (text, style, 
 TOOL/.venv/bin/python TOOL/dwg_edit.py <command> <file.dwg> ...
 ```
 
-Run from the folder that holds the drawings. `-h` on any command lists its options. If `.venv` or ODA File Converter is missing, follow `TOOL/README.md`.
+On Windows the Python is `TOOL\.venv\Scripts\python.exe`. Run from the folder that holds the drawings. `-h` on any command lists its options. If `.venv` or ODA File Converter is missing, follow `TOOL/README.md`.
 
 ## Before you start
 

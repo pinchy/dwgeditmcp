@@ -7,61 +7,95 @@ Query and edit MULTILEADERs, sheets and schedule tables in AutoCAD DWG files fro
 
 Edits go to a working DXF copy in `.dwg_work/`. The DWG is only written by `save`.
 
-## Requirements
+## Install on macOS
 
-macOS with [Homebrew](https://brew.sh).
+Needs [Homebrew](https://brew.sh).
 
-### 1. Python
+1. Install Python 3.12 or newer (tested on 3.14):
 
-Python 3.12 or newer (tested on 3.14).
+   ```bash
+   brew install python
+   ```
 
-```bash
-brew install python
-```
+2. Install ODA File Converter. It converts DWG to DXF and back. Free download:
+   https://www.opendesign.com/guestfiles/oda_file_converter
 
-### 2. ODA File Converter
+   Install the macOS build so the app is at `/Applications/ODAFileConverter.app` or `~/Applications/ODAFileConverter.app`. Open it once from Finder so macOS lets it run.
 
-Converts DWG to DXF and back. Free download:
-https://www.opendesign.com/guestfiles/oda_file_converter
+3. Install rsvg-convert. Only `render` (PNG previews) needs it:
 
-Install the macOS build so the app is at one of:
+   ```bash
+   brew install librsvg
+   ```
 
-- `/Applications/ODAFileConverter.app`
-- `~/Applications/ODAFileConverter.app`
+4. Get the tool and set up its Python environment:
 
-Open it once from Finder so macOS lets it run.
+   ```bash
+   git clone https://github.com/pinchy/dwgeditmcp.git
+   ```
 
-### 3. rsvg-convert
+   ```bash
+   cd dwgeditmcp
+   ```
 
-Only needed for `render` (PNG previews).
+   ```bash
+   python3 -m venv .venv
+   ```
 
-```bash
-brew install librsvg
-```
+   ```bash
+   .venv/bin/pip install -r requirements.txt
+   ```
 
-## Install
+5. Check it works:
 
-```bash
-git clone https://github.com/pinchy/dwgeditmcp.git
-```
+   ```bash
+   .venv/bin/python dwg_edit.py -h
+   ```
 
-```bash
-cd dwgeditmcp
-```
+## Install on Windows
 
-```bash
-python3 -m venv .venv
-```
+Use PowerShell.
 
-```bash
-.venv/bin/pip install -r requirements.txt
-```
+1. Install Python 3.12 or newer from https://www.python.org/downloads/windows/. In the installer, tick "Add python.exe to PATH".
 
-Check it works:
+2. Install Git from https://git-scm.com/download/win.
 
-```bash
-.venv/bin/python dwg_edit.py -h
-```
+3. Install ODA File Converter. It converts DWG to DXF and back. Free download:
+   https://www.opendesign.com/guestfiles/oda_file_converter
+
+   Use the Windows installer and keep the default folder (`C:\Program Files\ODA\...`). The tool finds it there.
+
+4. Install rsvg-convert. Only `render` (PNG previews) needs it. Download `rsvg-convert.exe` from https://github.com/miyako/console-rsvg-convert/releases and put its folder on your PATH. Or, with [Chocolatey](https://chocolatey.org):
+
+   ```powershell
+   choco install rsvg-convert
+   ```
+
+5. Get the tool and set up its Python environment:
+
+   ```powershell
+   git clone https://github.com/pinchy/dwgeditmcp.git
+   ```
+
+   ```powershell
+   cd dwgeditmcp
+   ```
+
+   ```powershell
+   py -m venv .venv
+   ```
+
+   ```powershell
+   .venv\Scripts\pip install -r requirements.txt
+   ```
+
+6. Check it works:
+
+   ```powershell
+   .venv\Scripts\python dwg_edit.py -h
+   ```
+
+On Windows, use `.venv\Scripts\python` wherever this README says `.venv/bin/python`.
 
 ## Drawing rules
 
@@ -70,6 +104,8 @@ Your drawing rules live in `rules.toml`: leader style, leader scale per viewport
 ```bash
 cp rules.template.toml rules.toml
 ```
+
+On Windows: `copy rules.template.toml rules.toml`.
 
 Then edit `rules.toml`. It is git-ignored. Without it, the tool uses `rules.template.toml`. To use a file somewhere else, set `DWG_RULES=/path/to/rules.toml`.
 
@@ -82,6 +118,8 @@ Just point your AI client (Claude Code, Claude Desktop, Cursor, ...) to this fol
 ```bash
 ln -s "$PWD" ~/.claude/skills/dwg-edit
 ```
+
+On Windows, clone the repo straight into `%USERPROFILE%\.claude\skills\dwg-edit` instead, then do the install steps there.
 
 ### From the command line
 
@@ -123,7 +161,10 @@ The first CSV column is the row key (e.g. `MARK`).
 
 ## Claude Desktop (optional)
 
-Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`, with your own path:
+Add this to Claude Desktop's config file, with your own paths:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -136,5 +177,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`, w
   }
 }
 ```
+
+On Windows, `command` is `C:\\path\\to\\dwgeditmcp\\.venv\\Scripts\\python.exe` (double backslashes in JSON).
 
 Restart Claude Desktop. `DWG_HOME` is the folder relative DWG paths resolve against.

@@ -81,6 +81,12 @@ class ToolError(Exception):
 def setup_oda() -> None:
     if shutil.which("ODAFileConverter"):
         return
+    if sys.platform == "win32":
+        # The installer puts each version in its own folder, e.g. "ODAFileConverter 25.12.0".
+        found = sorted(Path("C:/Program Files/ODA").glob("ODAFileConverter*/ODAFileConverter.exe"))
+        if found:
+            ezdxf.options.set("odafc-addon", "win_exec_path", str(found[-1]))
+            return
     for path in ODA_CANDIDATES:
         if Path(path).is_file():
             ezdxf.options.set("odafc-addon", "unix_exec_path", path)
@@ -103,12 +109,12 @@ def work_paths(dwg: Path) -> dict[str, Path]:
 def load_meta(dwg: Path) -> dict:
     meta_file = work_paths(dwg)["meta"]
     if meta_file.is_file():
-        return json.loads(meta_file.read_text())
+        return json.loads(meta_file.read_text(encoding="utf-8"))
     return {}
 
 
 def save_meta(dwg: Path, meta: dict) -> None:
-    work_paths(dwg)["meta"].write_text(json.dumps(meta, indent=2))
+    work_paths(dwg)["meta"].write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
 def open_working(dwg: Path, fresh: bool = False) -> Drawing:
@@ -797,7 +803,7 @@ def cmd_set(args) -> None:
 def cmd_apply(args) -> None:
     dwg = Path(args.dwg).resolve()
     doc = open_working(dwg)
-    edits = json.loads(Path(args.edits).read_text()) if args.edits != "-" else json.load(sys.stdin)
+    edits = json.loads(Path(args.edits).read_text(encoding="utf-8")) if args.edits != "-" else json.load(sys.stdin)
     changes = apply_edits(doc, edits)
     if args.dry_run:
         out({"dry_run": True, "changes": changes}, True)
@@ -1013,7 +1019,7 @@ def cmd_dump(args) -> None:
     rows = [detail(doc, s, e) for s, e in filter_leaders(doc, args)]
     text = json.dumps(rows, indent=2, ensure_ascii=False, default=str)
     if args.output:
-        Path(args.output).write_text(text)
+        Path(args.output).write_text(text, encoding="utf-8")
         print(f"Wrote {len(rows)} leader(s) to {args.output}")
     else:
         print(text)
@@ -1135,7 +1141,7 @@ def cmd_render(args) -> None:
     logging.getLogger("ezdxf").setLevel(logging.ERROR)  # MULTILEADER linetype handle 0 floods warnings
     rsvg = shutil.which("rsvg-convert")
     if not rsvg:
-        raise ToolError("rsvg-convert not found. Install it with: brew install librsvg")
+        raise ToolError("rsvg-convert not found. See README.md for how to install it.")
     dwg = Path(args.dwg).resolve()
     doc = open_working(dwg)
     out_dir = Path(args.output).resolve() if args.output else dwg.parent / "renders"
@@ -1236,7 +1242,7 @@ def cmd_render(args) -> None:
 
         png = out_dir / f"{e.dxf.handle}.png"
         svg_file = out_dir / f"{e.dxf.handle}.svg"
-        svg_file.write_text(svg_str)
+        svg_file.write_text(svg_str, encoding="utf-8")
         subprocess.run([rsvg, "-w", str(args.width), "-b", "white", "-o", str(png), str(svg_file)], check=True)
         svg_file.unlink()
         sheets = sheets_for(doc, p) if lay is msp else [space]
@@ -1407,7 +1413,7 @@ SCHEDULE_DEFAULTS = {
 
 def read_csv(path: Path) -> tuple[list[str], list[list[str]]]:
     import csv
-    with open(path, newline="") as f:
+    with open(path, newline="", encoding="utf-8") as f:
         rows = list(csv.reader(f))
     if not rows:
         raise ToolError(f"{path} is empty")
@@ -1418,7 +1424,7 @@ def read_csv(path: Path) -> tuple[list[str], list[list[str]]]:
 
 def write_csv(path: Path, header: list[str], data: list[list[str]]) -> None:
     import csv
-    with open(path, "w", newline="") as f:
+    with open(path, "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows([header] + data)
 
 
@@ -1526,7 +1532,7 @@ def load_config(path: str) -> tuple[Path, dict]:
     cfg_path = Path(path).resolve()
     if not cfg_path.is_file():
         raise ToolError(f"No schedule config at {cfg_path}")
-    cfg = json.loads(cfg_path.read_text())
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
     for spec in cfg["schedules"]:
         spec["csv_path"] = (cfg_path.parent / spec["csv"]).resolve()
     return cfg_path, cfg
