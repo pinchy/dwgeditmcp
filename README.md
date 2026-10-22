@@ -21,7 +21,7 @@ brew install python
 
 ### 2. ODA File Converter
 
-Converts DWG to DXF and back. Free download (needs a free account):
+Converts DWG to DXF and back. Free download:
 https://www.opendesign.com/guestfiles/oda_file_converter
 
 Install the macOS build so the app is at one of:
@@ -42,11 +42,11 @@ brew install librsvg
 ## Install
 
 ```bash
-git clone <this repo> dwg
+git clone https://github.com/pinchy/dwgeditmcp.git
 ```
 
 ```bash
-cd dwg
+cd dwgeditmcp
 ```
 
 ```bash
@@ -74,6 +74,16 @@ cp rules.template.toml rules.toml
 Then edit `rules.toml`. It is git-ignored. Without it, the tool uses `rules.template.toml`. To use a file somewhere else, set `DWG_RULES=/path/to/rules.toml`.
 
 ## Use
+
+### With an AI client
+
+Just point your AI client (Claude Code, Claude Desktop, Cursor, ...) to this folder and it will work out how to invoke the tool. Alternatively, you can use it as a skill: [SKILL.md](SKILL.md) tells the AI how to run it. For Claude Code, link this folder into your skills folder (run it from this folder):
+
+```bash
+ln -s "$PWD" ~/.claude/skills/dwg-edit
+```
+
+### From the command line
 
 ```bash
 .venv/bin/python dwg_edit.py open "My Drawing.dwg"
@@ -119,8 +129,8 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`, w
 {
   "mcpServers": {
     "dwg": {
-      "command": "/path/to/dwg/.venv/bin/python",
-      "args": ["/path/to/dwg/dwg_mcp.py"],
+      "command": "/path/to/dwgeditmcp/.venv/bin/python",
+      "args": ["/path/to/dwgeditmcp/dwg_mcp.py"],
       "env": {"DWG_HOME": "/path/to/your/drawings"}
     }
   }
